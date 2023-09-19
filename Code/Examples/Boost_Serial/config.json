@@ -1,0 +1,47 @@
+{
+"joints": [
+    {
+        "identifier": 0,
+        "min_angle": -90,
+        "max_angle": 90,
+        "min_pwm": 500,
+        "max_pwm": 2500
+    },
+    {
+        "identifier": 1,
+        "min_angle": -30,
+        "max_angle": 90,
+        "min_pwm": 500,
+        "max_pwm": 2150
+    },
+    {
+        "identifier": 2,
+        "min_angle": 0,
+        "max_angle": 135,
+        "min_pwm": 500,
+        "max_pwm": 2100
+    },
+    {
+        "identifier": 3,
+        "min_angle": 90,
+        "max_angle": -90,
+        "min_pwm": 700,
+        "max_pwm": 2500
+    },
+    {
+        "identifier": 4,
+        "min_angle": 0,
+        "max_angle": 0,
+        "min_pwm": 500,
+        "max_pwm": 2500
+    },
+    {
+        "identifier": 5,
+        "min_angle": -90,
+        "max_angle": 90,
+        "min_pwm": 500,
+        "max_pwm": 2500
+    }
+
+]
+}
