@@ -42,8 +42,7 @@ public:
     }
 
     auto goal_msg = Position::Goal();
-    // goal_msg.order = 10;
-    goal_msg.order = "1234";
+    goal_msg.order = "0 10 1 20 2 30 3 40 500";
     
     RCLCPP_INFO(this->get_logger(), "Sending goal");
 
