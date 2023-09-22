@@ -38,7 +38,7 @@ private:
     const rclcpp_action::GoalUUID & uuid,
     std::shared_ptr<const Position::Goal> goal)
   {
-    RCLCPP_INFO(this->get_logger(), "Received goal request with order %d", goal->order);
+    RCLCPP_INFO_STREAM(this->get_logger(), "Received goal request with order " << goal->order);
     (void)uuid;
     return rclcpp_action::GoalResponse::ACCEPT_AND_EXECUTE;
   }

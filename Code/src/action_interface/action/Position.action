@@ -1,4 +1,4 @@
-int32 order
+string order
 ---
 int32[] sequence
 ---
