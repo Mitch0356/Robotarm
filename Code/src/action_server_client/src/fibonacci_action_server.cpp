@@ -61,29 +61,47 @@ private:
   void execute(const std::shared_ptr<GoalHandleFibonacci> goal_handle)
   {
     RCLCPP_INFO(this->get_logger(), "Executing goal");
+
     rclcpp::Rate loop_rate(1);
     const auto goal = goal_handle->get_goal();
     auto feedback = std::make_shared<Fibonacci::Feedback>();
     auto & sequence = feedback->partial_sequence;
-    sequence.push_back(0);
-    sequence.push_back(1);
+    // sequence.push_back(0);
+    // sequence.push_back(1);
+    std::vector <std::vector<int32_t, std::allocator<int32_t>>>  positions = {
+      {0, 1500, 1, 1900, 2, 1900, 3, 1500, 4, 1500, 5, 1500, 5000},   //Ready
+      {0, 1500, 1, 1500, 2, 700, 3, 1500, 4, 1500, 5, 1500, 5000},    //Straight up
+      {0, 1500, 1, 2100, 2, 2100, 3, 1000, 4, 1500, 5, 1500, 5000},   //Park
+      {0, 1500, 1, 1500, 2, 1500, 3, 1500, 4, 1500, 5, 1500, 5000},   //Init
+      {0, 0, 1, 0, 2, 0, 3, 0, 4, 0, 5, 0, 0}                         //Stop
+    };
+
     auto result = std::make_shared<Fibonacci::Result>();
 
-    for (int i = 1; (i < goal->order) && rclcpp::ok(); ++i) {
-      // Check if there is a cancel request
-      if (goal_handle->is_canceling()) {
-        result->sequence = sequence;
-        goal_handle->canceled(result);
-        RCLCPP_INFO(this->get_logger(), "Goal canceled");
-        return;
-      }
-      // Update sequence
-      sequence.push_back(sequence[i] + sequence[i - 1]);
-      // Publish feedback
-      goal_handle->publish_feedback(feedback);
-      RCLCPP_INFO(this->get_logger(), "Publish feedback");
+    // for (int i = 1; (i < goal->order) && rclcpp::ok(); ++i) {
+    std::vector<int32_t, std::allocator<int32_t>> previous_sequence;
+    sequence = positions.at(0);
+    int i = 0;
+    while (true) {
+      if (sequence != previous_sequence) {
+        // Check if there is a cancel request
+        if (goal_handle->is_canceling()) {
+          result->sequence = sequence;
+          goal_handle->canceled(result);
+          RCLCPP_INFO(this->get_logger(), "Goal canceled");
+          return;
+        }
+        // Update sequence
+        // sequence.push_back(sequence[i] + sequence[i - 1]);
+        // Publish feedback
+        goal_handle->publish_feedback(feedback);
+        RCLCPP_INFO(this->get_logger(), "Publish feedback");
 
-      loop_rate.sleep();
+        loop_rate.sleep();
+        previous_sequence = sequence;
+        i++;
+        sequence = update_sequence(positions, i);
+      }
     }
 
     // Check if goal is done
@@ -92,6 +110,12 @@ private:
       goal_handle->succeed(result);
       RCLCPP_INFO(this->get_logger(), "Goal succeeded");
     }
+  }
+
+  std::vector<int32_t, std::allocator<int32_t>> update_sequence(std::vector <std::vector<int32_t, std::allocator<int32_t>>> & positions, int index) {
+    //getValues
+    index %= 5;
+    return positions.at(index);
   }
 };  // class FibonacciActionServer
 

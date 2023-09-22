@@ -42,8 +42,9 @@ public:
     }
 
     auto goal_msg = Fibonacci::Goal();
-    goal_msg.order = 10;
-
+    // goal_msg.order = 10;
+    goal_msg.order = 1;
+    
     RCLCPP_INFO(this->get_logger(), "Sending goal");
 
     auto send_goal_options = rclcpp_action::Client<Fibonacci>::SendGoalOptions();
@@ -102,7 +103,7 @@ private:
       ss << number << " ";
     }
     RCLCPP_INFO(this->get_logger(), ss.str().c_str());
-    rclcpp::shutdown();
+    // rclcpp::shutdown();
   }
 };  // class FibonacciActionClient
 
