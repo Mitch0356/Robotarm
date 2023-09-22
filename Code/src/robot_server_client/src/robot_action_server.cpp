@@ -2,41 +2,41 @@
 #include <memory>
 #include <thread>
 
-#include "action_interface/action/fibonacci.hpp"
+#include "action_interface/action/position.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "rclcpp_components/register_node_macro.hpp"
 
-#include "action_server_client/visibility_control.h"
+#include "../include/action_server_client/visibility_control.h"
 
-namespace action_server_client
+namespace robot_server_client
 {
-class FibonacciActionServer : public rclcpp::Node
+class RobotActionServer : public rclcpp::Node
 {
 public:
-  using Fibonacci = action_interface::action::Fibonacci;
-  using GoalHandleFibonacci = rclcpp_action::ServerGoalHandle<Fibonacci>;
+  using Position = action_interface::action::Position;
+  using GoalHandlePosition = rclcpp_action::ServerGoalHandle<Position>;
 
-  ACTION_SERVER_CLIENT_PUBLIC
-  explicit FibonacciActionServer(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
-  : Node("fibonacci_action_server", options)
+  ROBOT_SERVER_CLIENT_PUBLIC
+  explicit RobotActionServer(const rclcpp::NodeOptions & options = rclcpp::NodeOptions())
+  : Node("robot_action_server", options)
   {
     using namespace std::placeholders;
 
-    this->action_server_ = rclcpp_action::create_server<Fibonacci>(
+    this->action_server_ = rclcpp_action::create_server<Position>(
       this,
-      "fibonacci",
-      std::bind(&FibonacciActionServer::handle_goal, this, _1, _2),
-      std::bind(&FibonacciActionServer::handle_cancel, this, _1),
-      std::bind(&FibonacciActionServer::handle_accepted, this, _1));
+      "position",
+      std::bind(&RobotActionServer::handle_goal, this, _1, _2),
+      std::bind(&RobotActionServer::handle_cancel, this, _1),
+      std::bind(&RobotActionServer::handle_accepted, this, _1));
   }
 
 private:
-  rclcpp_action::Server<Fibonacci>::SharedPtr action_server_;
+  rclcpp_action::Server<Position>::SharedPtr action_server_;
 
   rclcpp_action::GoalResponse handle_goal(
     const rclcpp_action::GoalUUID & uuid,
-    std::shared_ptr<const Fibonacci::Goal> goal)
+    std::shared_ptr<const Position::Goal> goal)
   {
     RCLCPP_INFO(this->get_logger(), "Received goal request with order %d", goal->order);
     (void)uuid;
@@ -44,27 +44,27 @@ private:
   }
 
   rclcpp_action::CancelResponse handle_cancel(
-    const std::shared_ptr<GoalHandleFibonacci> goal_handle)
+    const std::shared_ptr<GoalHandlePosition> goal_handle)
   {
     RCLCPP_INFO(this->get_logger(), "Received request to cancel goal");
     (void)goal_handle;
     return rclcpp_action::CancelResponse::ACCEPT;
   }
 
-  void handle_accepted(const std::shared_ptr<GoalHandleFibonacci> goal_handle)
+  void handle_accepted(const std::shared_ptr<GoalHandlePosition> goal_handle)
   {
     using namespace std::placeholders;
     // this needs to return quickly to avoid blocking the executor, so spin up a new thread
-    std::thread{std::bind(&FibonacciActionServer::execute, this, _1), goal_handle}.detach();
+    std::thread{std::bind(&RobotActionServer::execute, this, _1), goal_handle}.detach();
   }
 
-  void execute(const std::shared_ptr<GoalHandleFibonacci> goal_handle)
+  void execute(const std::shared_ptr<GoalHandlePosition> goal_handle)
   {
     RCLCPP_INFO(this->get_logger(), "Executing goal");
 
     rclcpp::Rate loop_rate(1);
     const auto goal = goal_handle->get_goal();
-    auto feedback = std::make_shared<Fibonacci::Feedback>();
+    auto feedback = std::make_shared<Position::Feedback>();
     auto & sequence = feedback->partial_sequence;
     // sequence.push_back(0);
     // sequence.push_back(1);
@@ -76,7 +76,7 @@ private:
       {0, 0, 1, 0, 2, 0, 3, 0, 4, 0, 5, 0, 0}                         //Stop
     };
 
-    auto result = std::make_shared<Fibonacci::Result>();
+    auto result = std::make_shared<Position::Result>();
 
     // for (int i = 1; (i < goal->order) && rclcpp::ok(); ++i) {
     std::vector<int32_t, std::allocator<int32_t>> previous_sequence;
@@ -117,8 +117,8 @@ private:
     index %= 5;
     return positions.at(index);
   }
-};  // class FibonacciActionServer
+};  // class RobotActionServer
 
-}  // namespace action_server_client
+}  // namespace robot_server_client
 
-RCLCPP_COMPONENTS_REGISTER_NODE(action_server_client::FibonacciActionServer)
+RCLCPP_COMPONENTS_REGISTER_NODE(robot_server_client::RobotActionServer)
