@@ -1,6 +1,7 @@
 #include <functional>
 #include <memory>
 #include <thread>
+#include <chrono>
 
 #include "action_interface/action/position.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -87,24 +88,30 @@ private:
     auto result = std::make_shared<Position::Result>();
 
     std::vector<uint16_t> totalOrder = parse(goal->order);
-
+    const auto startTime{std::chrono::steady_clock::now()};
+    uint32_t maxTime = 2300;
+    uint32_t givenTime = 0;
     std::cout << "Moving towards: " << std::endl;
-    for (uint16_t i = 0; i < totalOrder.size(); ++i) {
+    for (uint16_t i = 0; i < totalOrder.size() - 1; ++i) {
       std::cout << totalOrder.at(i) << " ";
+    }
+    if (totalOrder.size() % 2 == 1) {
+      givenTime = totalOrder.at(totalOrder.size() - 1);
     }
     std::cout << std::endl;
     if (totalOrder.size() % 2 == 0) {
       std::cout << "As fast as possible" << std:: endl;
     } else {
-      std::cout << "In " << totalOrder.at(totalOrder.size() - 1) << " milliseconds" << std::endl;
+      std::cout << "In " << givenTime << " milliseconds" << std::endl;
     }
 
     // for (int i = 1; (i < goal->order) && rclcpp::ok(); ++i) {
-      int i = 0;
+
     bool goalCompleted = false;
     while (!goalCompleted) {
+      const auto currentTime{std::chrono::steady_clock::now()};
+      auto timePassed = (std::chrono::duration_cast<std::chrono::microseconds>(currentTime - startTime).count()) /1000.0;
       // Check if there is a cancel request
-        i++;
       if (goal_handle->is_canceling()) {
         result->sequence = sequence;
         goal_handle->canceled(result);
@@ -112,16 +119,20 @@ private:
         return;
       }
       // Update sequence for feedback
-      sequence.push_back(1);
+      if (timePassed > maxTime) {
+        sequence.push_back(0);
+        goalCompleted = true;
+      } else if (timePassed > givenTime) {
+        sequence.push_back(1);
+        goalCompleted = true;
+      } else {
+        sequence.push_back(1);
+      }
     
       // Publish feedback
       goal_handle->publish_feedback(feedback);
       RCLCPP_INFO(this->get_logger(), "Publish feedback");
-      if (i == 5) {
-        goalCompleted = true;
-      }
       loop_rate.sleep();
-      
     }
 
     // Check if goal is done
