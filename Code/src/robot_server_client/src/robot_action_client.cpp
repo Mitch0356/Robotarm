@@ -74,10 +74,11 @@ private:
     const std::shared_ptr<const Position::Feedback> feedback)
   {
     std::stringstream ss;
-    ss << "Next number in sequence received: ";
-    for (auto number : feedback->partial_sequence) {
-      ss << number << " ";
-    }
+    ss << "Moving status: ";
+    // for (auto number : feedback->partial_sequence) {
+    //   ss << number << " ";
+    // }
+    ss << feedback->partial_sequence.back();
     RCLCPP_INFO(this->get_logger(), ss.str().c_str());
   }
 

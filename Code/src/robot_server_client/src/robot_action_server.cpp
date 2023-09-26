@@ -100,26 +100,29 @@ private:
     }
 
     // for (int i = 1; (i < goal->order) && rclcpp::ok(); ++i) {
-
-    // bool goalCompleted = false;
-    // while (!goalCompleted) {
-    // Check if there is a cancel request
-    if (goal_handle->is_canceling()) {
-      result->sequence = sequence;
-      goal_handle->canceled(result);
-      RCLCPP_INFO(this->get_logger(), "Goal canceled");
-      return;
-    }
-    // Update sequence for feedback
-    sequence.push_back(1);
-  
-    // Publish feedback
-    goal_handle->publish_feedback(feedback);
-    RCLCPP_INFO(this->get_logger(), "Publish feedback");
-
-    loop_rate.sleep();
+      int i = 0;
+    bool goalCompleted = false;
+    while (!goalCompleted) {
+      // Check if there is a cancel request
+        i++;
+      if (goal_handle->is_canceling()) {
+        result->sequence = sequence;
+        goal_handle->canceled(result);
+        RCLCPP_INFO(this->get_logger(), "Goal canceled");
+        return;
+      }
+      // Update sequence for feedback
+      sequence.push_back(1);
+    
+      // Publish feedback
+      goal_handle->publish_feedback(feedback);
+      RCLCPP_INFO(this->get_logger(), "Publish feedback");
+      if (i == 5) {
+        goalCompleted = true;
+      }
+      loop_rate.sleep();
       
-    // }end of while 
+    }
 
     // Check if goal is done
     if (rclcpp::ok()) {
