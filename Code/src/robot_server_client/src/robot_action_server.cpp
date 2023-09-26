@@ -2,6 +2,7 @@
 #include <memory>
 #include <thread>
 #include <iostream>
+#include <ctype.h>
 #include <string>
 #include "../include/serial_interface/driver.hpp"
 
@@ -22,7 +23,7 @@ namespace robot_server_client
 
     ROBOT_SERVER_CLIENT_PUBLIC
     explicit RobotActionServer(const rclcpp::NodeOptions &options = rclcpp::NodeOptions())
-        : Node("robot_action_server", options), d("/dev/ttyUSB0")
+        : Node("robot_action_server", options)/*, d("/dev/ttyUSB0")*/
     {
       using namespace std::placeholders;
       this->action_server_ = rclcpp_action::create_server<Position>(
@@ -36,7 +37,7 @@ namespace robot_server_client
   private:
     std::vector<std::thread> thread_queue;
     rclcpp_action::Server<Position>::SharedPtr action_server_;
-    driver d;
+    // driver d;
     rclcpp_action::GoalResponse handle_goal(
         const rclcpp_action::GoalUUID &uuid,
         std::shared_ptr<const Position::Goal> goal)
@@ -66,22 +67,27 @@ namespace robot_server_client
       // thread_queue.push_back(std::thread{std::bind(&RobotActionServer::execute, this, _1), goal_handle});
     }
 
-    std::vector<uint16_t> parse(std::string order)
+    uint32_t getTime(std::string order)
     {
-      std::string delimiter = " ";
-      std::vector<uint16_t> total;
-
-      size_t pos = 0;
-      std::string token;
-      while ((pos = order.find(delimiter)) != std::string::npos)
-      {
-        token = order.substr(0, pos);
-        total.push_back(stoi(token));
-        order.erase(0, pos + delimiter.length());
+      std::string temp;
+      std::stringstream ss(order);
+      std::vector<std::string> result;
+      while (getline(ss, temp, ' ')) {
+          result.push_back(temp);
       }
-      total.push_back(stoi(order));
-
-      return total;
+      if (std::isdigit(result.at(0).at(0))) {
+        if (result.size() % 2 == 0) {
+          return 0;
+        } else {
+          return stoi(result.back());
+        }
+      } else {
+        if (result.size() % 2 == 1) {
+          return 0;
+        } else {
+          return stoi(result.back());
+        }
+      }
     }
 
     void execute(const std::shared_ptr<GoalHandlePosition> goal_handle)
@@ -92,14 +98,9 @@ namespace robot_server_client
       auto feedback = std::make_shared<Position::Feedback>();
       auto &sequence = feedback->partial_sequence;
       auto result = std::make_shared<Position::Result>();
-      std::vector<uint16_t> totalOrder = parse(goal->order);
+      uint32_t givenTime = getTime(goal->order);
       const auto startTime{std::chrono::steady_clock::now()};
       uint32_t maxTime = 2300;
-      uint32_t givenTime = 0;
-      if (totalOrder.size() % 2 == 1)
-      {
-        givenTime = totalOrder.at(totalOrder.size() - 1);
-      }
       bool goalCompleted = false;
       while (!goalCompleted)
       {
