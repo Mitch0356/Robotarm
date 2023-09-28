@@ -8,26 +8,46 @@ void moveArmToPosition(const std::string& command) {
     std::istringstream iss(command);
     long speed;
     iss >> positionCommand >> speedStr;
-    if(!speedStr.empty()) {
-        speed = std::atoi(speedStr.c_str());
-        std::cout << "Moving to position: " << positionCommand << ", with speed " << speed << " ms." << std::endl;
-    } else {
-        std::cout << "Moving to position: " << positionCommand << std::endl;
-
+    size_t foundPosition = positionCommand.find_first_of("PRSIprsi");
+    if (foundPosition != std::string::npos && positionCommand.length() == 1) {
+        if(!speedStr.empty()) {
+            speed = std::atoi(speedStr.c_str());
+            std::cout << "Moving to position: " << positionCommand << ", with speed " << speed << " ms." << std::endl;
+        } else {
+            std::cout << "Moving to position: " << positionCommand << std::endl;
+        }
     }
 
 }
 
+std::vector<uint16_t> parseJointToDegree(std::string command) {
+  std::string delimiter = " ";
+  std::vector<uint16_t> total;
+
+  size_t pos = 0;
+  std::string token;
+  while ((pos = command.find(delimiter)) != std::string::npos) {
+      token = command.substr(0, pos);
+      command.push_back(stoi(token));
+      command.erase(0, pos + delimiter.length());
+  }
+  total.push_back(stoi(command));
+
+  return total;
+ }
+
 void moveJointToDegree(const std::string& command) {
-    int jointNumber, degrees;
-    std::string interval;
-    std::istringstream iss(command);
-    std::cout << command << std::endl;
-    iss >> jointNumber >> degrees >> interval;
-    if(!interval.empty()) {
-        std::cout << "Moving joint " << jointNumber << " to " << degrees << " degrees with interval " << interval << " ms." << std::endl;
+    std::vector<uint16_t> commandNumbers = parseJointToDegree(command);
+
+    std::cout << "Moving towards: " << std::endl;
+    for (uint16_t i = 0; i < commandNumbers.size() - 1; ++i) {
+      std::cout << commandNumbers.at(i) << " ";
+    }
+
+    if (commandNumbers.size() % 2 == 0) {
+      std::cout << "As fast as possible" << std:: endl;
     } else {
-        std::cout << "Moving joint " << jointNumber << " to " << degrees << " degrees" << std::endl;
+      std::cout << "In " << commandNumbers.back() << " milliseconds" << std::endl;
     }
 }
 
