@@ -33,10 +33,23 @@ install(TARGETS
 
 add_library(action_server SHARED
   src/robot_action_server.cpp)
+
+
+
 target_include_directories(action_server PRIVATE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
   
+add_library(driver STATIC
+include/serial_interface/driver.cpp
+include/serial_interface/driver.hpp
+include/serial_interface/driver.hpp
+include/serial_interface/joints.cpp
+include/serial_interface/serial_port.cpp
+include/serial_interface/serial_port.hpp
+include/serial_interface/postures.hpp
+)
+target_include_directories(driver PRIVATE include/serial_port)
 target_compile_definitions(action_server
   PRIVATE "ROBOT_SERVER_CLIENT_BUILDING_DLL")
 ament_target_dependencies(action_server
@@ -47,9 +60,11 @@ ament_target_dependencies(action_server
 rclcpp_components_register_node(action_server PLUGIN "robot_server_client::RobotActionServer" EXECUTABLE robot_action_server)
 install(TARGETS
   action_server
+  driver
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
-  RUNTIME DESTINATION bin)
+  RUNTIME DESTINATION bin
+  )
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

@@ -6,6 +6,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "rclcpp_components/register_node_macro.hpp"
+#include "../include/serial_interface/driver.hpp"
 
 #include "../include/action_server_client/visibility_control.h"
 

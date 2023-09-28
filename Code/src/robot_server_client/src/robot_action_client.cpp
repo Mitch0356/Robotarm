@@ -27,7 +27,7 @@ public:
     this->client_ptr_ = rclcpp_action::create_client<Position>(this,"position");
     std::cout << "Robot interface, Kars en Mitchel 2023" << std::endl;
     std::cout << "\nSelect an option:\n";
-    std::cout << "1. Move the arm to a fixed position (P/R/I/U followed by an optional speed in ms)(Type '1', followed by a enter, after that type the command.)\n";
+    std::cout << "1. Move the arm to a fixed position (P(ark)/R(eady)/S(traight)/I(nit) followed by an optional speed in ms)(Type '1', followed by a enter, after that type the command.)\n";
     std::cout << "2. Move a specific joint to a certain degree (joint number, degrees, and interval)(Type '2',  followed by a enter, after that type the command.)\n";
     std::cout << "3. Emergency stop(Type '3')\n";
     std::cout << "4. Exit (Type '4')\n";
