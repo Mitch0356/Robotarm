@@ -33,6 +33,7 @@ public:
   }
 
 private:
+  std::vector<std::thread> thread_queue;
   rclcpp_action::Server<Position>::SharedPtr action_server_;
 
   rclcpp_action::GoalResponse handle_goal(
@@ -55,8 +56,12 @@ private:
   void handle_accepted(const std::shared_ptr<GoalHandlePosition> goal_handle)
   {
     using namespace std::placeholders;
+    if (!thread_queue.empty()) {
+      thread_queue.front().join();
+    }
     // this needs to return quickly to avoid blocking the executor, so spin up a new thread
-    std::thread{std::bind(&RobotActionServer::execute, this, _1), goal_handle}.detach();
+    // std::thread{std::bind(&RobotActionServer::execute, this, _1), goal_handle}.detach();
+    thread_queue.push_back(std::thread{std::bind(&RobotActionServer::execute, this, _1), goal_handle});
   }
 
  std::vector<uint16_t> parse(std::string order) {
@@ -78,7 +83,6 @@ private:
   void execute(const std::shared_ptr<GoalHandlePosition> goal_handle)
   {
     RCLCPP_INFO(this->get_logger(), "Executing goal");
-
 
     rclcpp::Rate loop_rate(1);
     const auto goal = goal_handle->get_goal();
