@@ -2,6 +2,7 @@
 #include <string>
 #include <cstdlib>
 #include <sstream>
+#include <vector>
 
 void moveArmToPosition(const std::string& command) {
     std::string positionCommand, speedStr;
@@ -16,34 +17,29 @@ void moveArmToPosition(const std::string& command) {
         } else {
             std::cout << "Moving to position: " << positionCommand << std::endl;
         }
+    } else {
+        std::cout << "Requested position '" << positionCommand << "' is unknown." << std::endl;
     }
 
 }
 
 std::vector<uint16_t> parseJointToDegree(std::string command) {
-  std::string delimiter = " ";
-  std::vector<uint16_t> total;
-
-  size_t pos = 0;
-  std::string token;
-  while ((pos = command.find(delimiter)) != std::string::npos) {
-      token = command.substr(0, pos);
-      command.push_back(stoi(token));
-      command.erase(0, pos + delimiter.length());
-  }
-  total.push_back(stoi(command));
-
-  return total;
+    std::string temp;
+    std::stringstream ss(command);
+    std::vector<uint16_t> result;
+    while (getline(ss, temp, ' ')) {
+        result.push_back(stoi(temp));
+    }
+    return result;
  }
 
 void moveJointToDegree(const std::string& command) {
     std::vector<uint16_t> commandNumbers = parseJointToDegree(command);
-
     std::cout << "Moving towards: " << std::endl;
     for (uint16_t i = 0; i < commandNumbers.size() - 1; ++i) {
       std::cout << commandNumbers.at(i) << " ";
     }
-
+    std::cout << std::endl;
     if (commandNumbers.size() % 2 == 0) {
       std::cout << "As fast as possible" << std:: endl;
     } else {
