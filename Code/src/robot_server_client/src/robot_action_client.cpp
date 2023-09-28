@@ -10,6 +10,9 @@
 #include "rclcpp_action/rclcpp_action.hpp"
 #include "rclcpp_components/register_node_macro.hpp"
 
+
+//ros2 run robot_server_client robot_action_client
+
 namespace robot_server_client
 {
 class RobotActionClient : public rclcpp::Node
@@ -21,29 +24,26 @@ public:
   explicit RobotActionClient(const rclcpp::NodeOptions & options)
   : Node("robot_action_client", options)
   {
-    this->client_ptr_ = rclcpp_action::create_client<Position>(
-      this,
-      "position");
-
-    this->timer_ = this->create_wall_timer(
-      std::chrono::milliseconds(500),
-      std::bind(&RobotActionClient::send_goal, this));
+    this->client_ptr_ = rclcpp_action::create_client<Position>(this,"position");
+    std::cout << "Robot interface, Kars en Mitchel 2023" << std::endl;
+    std::cout << "\nSelect an option:\n";
+    std::cout << "1. Move the arm to a fixed position (P/R/I/U followed by an optional speed in ms)(Type '1', followed by a enter, after that type the command.)\n";
+    std::cout << "2. Move a specific joint to a certain degree (joint number, degrees, and interval)(Type '2',  followed by a enter, after that type the command.)\n";
+    std::cout << "3. Emergency stop(Type '3')\n";
+    std::cout << "4. Exit (Type '4')\n";
+    handle_input();
   }
 
-  void send_goal()
+  void send_goal(const std::string& command)
   {
     using namespace std::placeholders;
-
-    this->timer_->cancel();
-
     if (!this->client_ptr_->wait_for_action_server()) {
       RCLCPP_ERROR(this->get_logger(), "Action server not available after waiting");
       rclcpp::shutdown();
     }
 
     auto goal_msg = Position::Goal();
-    goal_msg.order = "0 10 1 20 2 30 3 40 500";
-    
+    goal_msg.order = command;
     RCLCPP_INFO(this->get_logger(), "Sending goal");
 
     auto send_goal_options = rclcpp_action::Client<Position>::SendGoalOptions();
@@ -54,6 +54,35 @@ public:
     send_goal_options.result_callback =
       std::bind(&RobotActionClient::result_callback, this, _1);
     this->client_ptr_->async_send_goal(goal_msg, send_goal_options);
+
+  }
+
+   void handle_input()
+  {
+    std::string userInput;
+        std::cin >> userInput;
+
+        if (userInput == "1") {
+            std::string command;
+            std::cout << "Enter position command: " << std::endl;
+            std::cin.ignore();
+            std::getline(std::cin, command);
+            this->send_goal(command);
+            //place feedback here
+        } else if (userInput == "2") {
+            std::string command;
+            std::cout << "Enter joint command: " << std::endl;
+            std::cin.ignore();
+            std::getline(std::cin, command);
+            this->send_goal(command);
+            //place feedback here
+        } else if (userInput == "3") {
+            std::cout << "Emergency stop initiated." << std::endl;
+            //place feedback here
+        } else if (userInput == "4") {
+            std::cout << "Exiting program." << std::endl;
+            rclcpp::shutdown();
+        }
   }
 
 private:
@@ -74,10 +103,6 @@ private:
     const std::shared_ptr<const Position::Feedback> feedback)
   {
     std::stringstream ss;
-    ss << "Moving status: ";
-    // for (auto number : feedback->partial_sequence) {
-    //   ss << number << " ";
-    // }
     ss << feedback->partial_sequence.back();
     RCLCPP_INFO(this->get_logger(), ss.str().c_str());
   }
@@ -86,6 +111,7 @@ private:
   {
     switch (result.code) {
       case rclcpp_action::ResultCode::SUCCEEDED:
+      handle_input();
         break;
       case rclcpp_action::ResultCode::ABORTED:
         RCLCPP_ERROR(this->get_logger(), "Goal was aborted");
@@ -103,8 +129,10 @@ private:
       ss << number << " ";
     }
     RCLCPP_INFO(this->get_logger(), ss.str().c_str());
-    // rclcpp::shutdown();
   }
+
+
+ 
 };  // class RobotActionClient
 
 }  // namespace robot_server_client

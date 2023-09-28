@@ -32,6 +32,7 @@ public:
   }
 
 private:
+bool isBusy = false;
   rclcpp_action::Server<Position>::SharedPtr action_server_;
 
   rclcpp_action::GoalResponse handle_goal(
@@ -58,53 +59,20 @@ private:
     std::thread{std::bind(&RobotActionServer::execute, this, _1), goal_handle}.detach();
   }
 
- std::vector<uint16_t> parse(std::string order) {
-  std::string delimiter = " ";
-  std::vector<uint16_t> total;
-
-  size_t pos = 0;
-  std::string token;
-  while ((pos = order.find(delimiter)) != std::string::npos) {
-      token = order.substr(0, pos);
-      total.push_back(stoi(token));
-      order.erase(0, pos + delimiter.length());
-  }
-  total.push_back(stoi(order));
-
-  return total;
- }
 
   void execute(const std::shared_ptr<GoalHandlePosition> goal_handle)
   {
     RCLCPP_INFO(this->get_logger(), "Executing goal");
-
-
     rclcpp::Rate loop_rate(1);
     const auto goal = goal_handle->get_goal();
     auto feedback = std::make_shared<Position::Feedback>();
     auto & sequence = feedback->partial_sequence;
-    
     auto result = std::make_shared<Position::Result>();
-
-    std::vector<uint16_t> totalOrder = parse(goal->order);
-
-    std::cout << "Moving towards: " << std::endl;
-    for (uint16_t i = 0; i < totalOrder.size(); ++i) {
-      std::cout << totalOrder.at(i) << " ";
-    }
-    std::cout << std::endl;
-    if (totalOrder.size() % 2 == 0) {
-      std::cout << "As fast as possible" << std:: endl;
-    } else {
-      std::cout << "In " << totalOrder.at(totalOrder.size() - 1) << " milliseconds" << std::endl;
-    }
-
-    // for (int i = 1; (i < goal->order) && rclcpp::ok(); ++i) {
-      int i = 0;
+    std::vector<uint16_t> totalOrder = {1};
+    int i = 0;
     bool goalCompleted = false;
     while (!goalCompleted) {
-      // Check if there is a cancel request
-        i++;
+      i++;
       if (goal_handle->is_canceling()) {
         result->sequence = sequence;
         goal_handle->canceled(result);
@@ -113,15 +81,17 @@ private:
       }
       // Update sequence for feedback
       sequence.push_back(1);
-    
+
       // Publish feedback
       goal_handle->publish_feedback(feedback);
+      std::stringstream ss;
+      ss << feedback->partial_sequence.back();
+      RCLCPP_INFO(this->get_logger(), ss.str().c_str());
       RCLCPP_INFO(this->get_logger(), "Publish feedback");
-      if (i == 5) {
+
+      if (i == 1) {
         goalCompleted = true;
-      }
-      loop_rate.sleep();
-      
+      } 
     }
 
     // Check if goal is done
