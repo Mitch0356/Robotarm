@@ -79,10 +79,7 @@ bool isBusy = false;
         RCLCPP_INFO(this->get_logger(), "Goal canceled");
         return;
       }
-      // Update sequence for feedback
       sequence.push_back(1);
-
-      // Publish feedback
       goal_handle->publish_feedback(feedback);
       std::stringstream ss;
       ss << feedback->partial_sequence.back();
