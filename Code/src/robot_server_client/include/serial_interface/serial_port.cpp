@@ -2,7 +2,6 @@
  
 serial_port::serial_port(const std::string& port_location) : port_location(port_location), port(io, port_location)
 {
-    std::cout << __PRETTY_FUNCTION__ << ": " << port_location << std::endl;
     port.set_option(boost::asio::serial_port_base::baud_rate(BAUD_RATE));
     port.set_option(boost::asio::serial_port_base::character_size(CHARACTER_SIZE));
     port.set_option(boost::asio::serial_port_base::parity(boost::asio::serial_port_base::parity::none));

@@ -24,8 +24,10 @@ namespace robot_server_client
 
     ROBOT_SERVER_CLIENT_PUBLIC
     explicit RobotActionServer(const rclcpp::NodeOptions &options = rclcpp::NodeOptions())
-        : Node("robot_action_server", options), d("/dev/ttyUSB0")
+        : Node("robot_action_server", options), d("/dev/pts/2")
     {
+      RCLCPP_INFO(this->get_logger(), "STATE: {INITIATING}");
+      d.initialize();
       using namespace std::placeholders;
       this->action_server_ = rclcpp_action::create_server<Position>(
           this,
@@ -33,6 +35,7 @@ namespace robot_server_client
           std::bind(&RobotActionServer::handle_goal, this, _1, _2),
           std::bind(&RobotActionServer::handle_cancel, this, _1),
           std::bind(&RobotActionServer::handle_accepted, this, _1));
+      RCLCPP_INFO(this->get_logger(), "STATE: {IDLE}");
     }
 
   private:
@@ -70,6 +73,7 @@ namespace robot_server_client
 
     uint32_t getTime(std::string order)
     {
+      RCLCPP_INFO(this->get_logger(), "STATE: {SENDING_COMMAND}");
       std::string temp;
       std::stringstream ss(order);
       std::vector<std::string> result;
@@ -101,11 +105,10 @@ namespace robot_server_client
       }
     }
 
-    void moveArm(const std::string& command, const long &interval = 0)
+    void moveArm(const std::string &command, const long &interval = 0)
     {
       if (command == "0")
       {
-        std::cout << "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" << std::endl;
         d.stop_movement();
         return;
       }
@@ -113,7 +116,7 @@ namespace robot_server_client
       std::istringstream iss(command);
       iss >> positionCommand >> speedStr;
       size_t foundPosition = positionCommand.find_first_of("PRSIprsi");
-      if (foundPosition != std::string::npos )
+      if (foundPosition != std::string::npos)
       {
         std::cout << "Moving to position: " << positionCommand << ", with speed " << interval << " ms." << std::endl;
         if (positionCommand == "P" || positionCommand == "p")
@@ -135,13 +138,13 @@ namespace robot_server_client
       }
       else
       {
-       d.move_multiple(command, interval);
+        d.move_multiple(command, interval);
       }
     }
 
     void execute(const std::shared_ptr<GoalHandlePosition> goal_handle)
     {
-      RCLCPP_INFO(this->get_logger(), "Executing goal");
+      RCLCPP_INFO(this->get_logger(), "STATE: {EXECUTING_ACTION}");
       rclcpp::Rate loop_rate(1);
       const auto goal = goal_handle->get_goal();
       auto feedback = std::make_shared<Position::Feedback>();
@@ -152,12 +155,13 @@ namespace robot_server_client
       bool goalCompleted = false;
       while (!goalCompleted)
       {
+        RCLCPP_INFO(this->get_logger(), "STATE: {SENDING_FEEDBACK}");
 
         if (goal_handle->is_canceling())
         {
           result->sequence = sequence;
           goal_handle->canceled(result);
-          RCLCPP_INFO(this->get_logger(), "Goal canceled");
+          RCLCPP_INFO(this->get_logger(), "STATE: {IDLE}");
           return;
         }
         sequence.push_back(1);
@@ -166,7 +170,7 @@ namespace robot_server_client
         {
           result->sequence = sequence;
           goal_handle->succeed(result);
-          RCLCPP_INFO(this->get_logger(), "Goal succeeded");
+          RCLCPP_INFO(this->get_logger(), "STATE: {IDLE}");
         }
       }
     }

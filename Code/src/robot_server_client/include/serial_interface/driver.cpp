@@ -5,7 +5,6 @@
 
 driver::driver(std::string a_port) : robot_port(a_port)
 {
-    initialize();
 }
 
 driver::~driver()
@@ -18,8 +17,6 @@ void driver::move_arm_pos(const long degrees, const joint a_joint, const long in
     if (degrees >= a_joint.get_min_angle() && degrees <= a_joint.get_max_angle())
     {
         long target_pwm = a_joint.map_pwm(-degrees);
-        std::cout << a_joint.get_max_angle() << " " << a_joint.get_min_angle() << " " << a_joint.get_min_pwm() << " " << a_joint.get_max_pwm() << std::endl;
-        std::cout << "Target: " << target_pwm << std::endl;
         std::stringstream message;
         message << "#" << a_joint.get_identifier() << "P" << target_pwm;
         if (interval > 0)
@@ -69,7 +66,7 @@ void driver::initialize()
     {
         namespace fs = std::filesystem;
         boost::property_tree::ptree pt;
-        std::cout << "Current path is " << fs::current_path() << '\n'; // (1)
+        // std::cout << "Current path is " << fs::current_path() << '\n'; // (1)
         boost::property_tree::read_json(config_path, pt);
         const boost::property_tree::ptree &joint_tree = pt.get_child("joints");
         for (const auto &item : joint_tree)
@@ -110,7 +107,7 @@ void driver::move_multiple(const std::string &command, const long &interval = 0)
     }
     std::stringstream armCommand;
 
-    for (int i = 0; i < ((interval) ? result.size() - 1 : result.size()); ++i)
+    for (std::size_t i = 0; i < ((interval) ? result.size() - 1 : result.size()); ++i)
     {
         if (i % 2 == 0)
         {
