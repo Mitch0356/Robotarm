@@ -4,6 +4,7 @@
 #include <iostream>
 #include <ctype.h>
 #include <string>
+#include <sstream>
 #include "../include/serial_interface/driver.hpp"
 
 #include "action_interface/action/position.hpp"
@@ -23,7 +24,7 @@ namespace robot_server_client
 
     ROBOT_SERVER_CLIENT_PUBLIC
     explicit RobotActionServer(const rclcpp::NodeOptions &options = rclcpp::NodeOptions())
-        : Node("robot_action_server", options)/*, d("/dev/ttyUSB0")*/
+        : Node("robot_action_server", options), d("/dev/ttyUSB0")
     {
       using namespace std::placeholders;
       this->action_server_ = rclcpp_action::create_server<Position>(
@@ -37,7 +38,7 @@ namespace robot_server_client
   private:
     std::vector<std::thread> thread_queue;
     rclcpp_action::Server<Position>::SharedPtr action_server_;
-    // driver d;
+    driver d;
     rclcpp_action::GoalResponse handle_goal(
         const rclcpp_action::GoalUUID &uuid,
         std::shared_ptr<const Position::Goal> goal)
@@ -72,21 +73,69 @@ namespace robot_server_client
       std::string temp;
       std::stringstream ss(order);
       std::vector<std::string> result;
-      while (getline(ss, temp, ' ')) {
-          result.push_back(temp);
+      while (getline(ss, temp, ' '))
+      {
+        result.push_back(temp);
       }
-      if (std::isdigit(result.at(0).at(0))) {
-        if (result.size() % 2 == 0) {
+      if (std::isdigit(result.at(0).at(0)))
+      {
+        if (result.size() % 2 == 0)
+        {
           return 0;
-        } else {
+        }
+        else
+        {
           return stoi(result.back());
         }
-      } else {
-        if (result.size() % 2 == 1) {
+      }
+      else
+      {
+        if (result.size() % 2 == 1)
+        {
           return 0;
-        } else {
+        }
+        else
+        {
           return stoi(result.back());
         }
+      }
+    }
+
+    void moveArm(const std::string& command, const long &interval = 0)
+    {
+      if (command == "0")
+      {
+        std::cout << "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" << std::endl;
+        d.stop_movement();
+        return;
+      }
+      std::string positionCommand, speedStr;
+      std::istringstream iss(command);
+      iss >> positionCommand >> speedStr;
+      size_t foundPosition = positionCommand.find_first_of("PRSIprsi");
+      if (foundPosition != std::string::npos )
+      {
+        std::cout << "Moving to position: " << positionCommand << ", with speed " << interval << " ms." << std::endl;
+        if (positionCommand == "P" || positionCommand == "p")
+        {
+          d.move_arm_posture(PARK, interval);
+        }
+        else if (positionCommand == "R" || positionCommand == "r")
+        {
+          d.move_arm_posture(READY, interval);
+        }
+        else if (positionCommand == "S" || positionCommand == "s")
+        {
+          d.move_arm_posture(STRAIGHT, interval);
+        }
+        else if (positionCommand == "I" || positionCommand == "i")
+        {
+          d.move_arm_posture(INIT, interval);
+        }
+      }
+      else
+      {
+       d.move_multiple(command, interval);
       }
     }
 
@@ -99,14 +148,11 @@ namespace robot_server_client
       auto &sequence = feedback->partial_sequence;
       auto result = std::make_shared<Position::Result>();
       uint32_t givenTime = getTime(goal->order);
-      const auto startTime{std::chrono::steady_clock::now()};
-      uint32_t maxTime = 2300;
+      moveArm(goal->order, givenTime);
       bool goalCompleted = false;
       while (!goalCompleted)
       {
-        const auto currentTime{std::chrono::steady_clock::now()};
-        auto timePassed = (std::chrono::duration_cast<std::chrono::microseconds>(currentTime - startTime).count()) / 1000.0;
-        // Check if there is a cancel request
+
         if (goal_handle->is_canceling())
         {
           result->sequence = sequence;
@@ -114,23 +160,8 @@ namespace robot_server_client
           RCLCPP_INFO(this->get_logger(), "Goal canceled");
           return;
         }
-        // Update sequence for feedback
-        if (timePassed > maxTime)
-        {
-          sequence.push_back(0);
-          goalCompleted = true;
-        }
-        else if (timePassed > givenTime)
-        {
-          sequence.push_back(1);
-          goalCompleted = true;
-        }
-        else
-        {
-          sequence.push_back(1);
-        }
-
-        // Check if goal is done
+        sequence.push_back(1);
+        goalCompleted = true;
         if (rclcpp::ok())
         {
           result->sequence = sequence;

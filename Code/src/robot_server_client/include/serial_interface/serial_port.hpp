@@ -29,6 +29,6 @@ class serial_port{
     const std::string port_location;
     boost::asio::io_service io;
     boost::asio::serial_port port;
-    const long BAUD_RATE = 9600;
+    const long BAUD_RATE = 115200;
     const long CHARACTER_SIZE = 8;
 };

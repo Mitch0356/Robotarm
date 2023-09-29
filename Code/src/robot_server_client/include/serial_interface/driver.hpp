@@ -18,6 +18,7 @@ public:
     void initialize();
     void move_arm_pos(const long degrees, const joint a_joint, const long interval);
     void move_arm_posture(const postures a_posture, const long interval);
+    void move_multiple(const std::string& command, const long& interval);
     void stop_movement();
     joint get_joint(const long& index) const;
 };

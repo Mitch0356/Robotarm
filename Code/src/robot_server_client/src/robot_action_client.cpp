@@ -90,18 +90,42 @@ std::vector<std::string> parseJointToDegree(std::string command) {
     return result;
  }
 
+
+  bool isNegative(std::string input) {
+    return input[0] == '-';
+}
+
   bool check_digits(std::vector<std::string> commandNumbers)
   {
     for (std::string word : commandNumbers) {
-      for (char character : word) {
-          if (!isdigit(character)){
-              return false;
+      if (!isNegative(word)) {
+        for (char character : word) {
+            if (!isdigit(character)){
+                return false;
+            }
+        }
+      } else {
+        for(std::string::size_type character = 1; character < word.size(); ++character) {
+          if (!isdigit(word.at(character))){
+            return false;
           }
+        }
       }
     }
-
     return true;
   }
+
+
+void QoSMessage(const std::string time)
+{
+
+  if(std::stoi(time) >= 2300)
+  {
+    std::stringstream ss;
+    ss << "QoS-Warning: {QoS won't be reached with interval " << time << "}";
+      RCLCPP_ERROR(this->get_logger(), ss.str().c_str());
+  } 
+}  
 
 void moveJointToDegree(const std::string& command) {
     std::vector<std::string> commandNumbers = parseJointToDegree(command);
@@ -117,7 +141,7 @@ void moveJointToDegree(const std::string& command) {
       if (commandNumbers.size() % 2 == 0) {
         std::cout << "As fast as possible" << std:: endl;
       } else {
-        std::cout << "In " << commandNumbers.back() << " milliseconds" << std::endl;
+        QoSMessage(commandNumbers.back());
       }
       this->send_goal(command);
     }
@@ -125,6 +149,7 @@ void moveJointToDegree(const std::string& command) {
 
 void makeStop()
 {
+  this->send_goal("0");
   handle_input();
 }
 
