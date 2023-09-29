@@ -5,7 +5,6 @@
 #include <string>
 #include "../include/serial_interface/driver.hpp"
 
-
 #include "action_interface/action/position.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
@@ -35,6 +34,7 @@ namespace robot_server_client
     }
 
   private:
+    std::vector<std::thread> thread_queue;
     rclcpp_action::Server<Position>::SharedPtr action_server_;
     driver d;
     rclcpp_action::GoalResponse handle_goal(
@@ -57,8 +57,31 @@ namespace robot_server_client
     void handle_accepted(const std::shared_ptr<GoalHandlePosition> goal_handle)
     {
       using namespace std::placeholders;
+      // if (!thread_queue.empty())
+      // {
+      //   thread_queue.front().join();
+      // }
       // this needs to return quickly to avoid blocking the executor, so spin up a new thread
       std::thread{std::bind(&RobotActionServer::execute, this, _1), goal_handle}.detach();
+      // thread_queue.push_back(std::thread{std::bind(&RobotActionServer::execute, this, _1), goal_handle});
+    }
+
+    std::vector<uint16_t> parse(std::string order)
+    {
+      std::string delimiter = " ";
+      std::vector<uint16_t> total;
+
+      size_t pos = 0;
+      std::string token;
+      while ((pos = order.find(delimiter)) != std::string::npos)
+      {
+        token = order.substr(0, pos);
+        total.push_back(stoi(token));
+        order.erase(0, pos + delimiter.length());
+      }
+      total.push_back(stoi(order));
+
+      return total;
     }
 
     void execute(const std::shared_ptr<GoalHandlePosition> goal_handle)
@@ -69,12 +92,20 @@ namespace robot_server_client
       auto feedback = std::make_shared<Position::Feedback>();
       auto &sequence = feedback->partial_sequence;
       auto result = std::make_shared<Position::Result>();
-      std::vector<uint16_t> totalOrder = {1};
-      int i = 0;
+      std::vector<uint16_t> totalOrder = parse(goal->order);
+      const auto startTime{std::chrono::steady_clock::now()};
+      uint32_t maxTime = 2300;
+      uint32_t givenTime = 0;
+      if (totalOrder.size() % 2 == 1)
+      {
+        givenTime = totalOrder.at(totalOrder.size() - 1);
+      }
       bool goalCompleted = false;
       while (!goalCompleted)
       {
-        i++;
+        const auto currentTime{std::chrono::steady_clock::now()};
+        auto timePassed = (std::chrono::duration_cast<std::chrono::microseconds>(currentTime - startTime).count()) / 1000.0;
+        // Check if there is a cancel request
         if (goal_handle->is_canceling())
         {
           result->sequence = sequence;
@@ -82,26 +113,29 @@ namespace robot_server_client
           RCLCPP_INFO(this->get_logger(), "Goal canceled");
           return;
         }
-        sequence.push_back(1);
-        goal_handle->publish_feedback(feedback);
-        std::stringstream ss;
-        ss << feedback->partial_sequence.back();
-        RCLCPP_INFO(this->get_logger(), ss.str().c_str());
-        RCLCPP_INFO(this->get_logger(), "Publish feedback");
-
-        if (i == 1)
+        // Update sequence for feedback
+        if (timePassed > maxTime)
         {
-          d.move_arm_posture(READY, 1000);
+          sequence.push_back(0);
           goalCompleted = true;
         }
-      }
+        else if (timePassed > givenTime)
+        {
+          sequence.push_back(1);
+          goalCompleted = true;
+        }
+        else
+        {
+          sequence.push_back(1);
+        }
 
-      // Check if goal is done
-      if (rclcpp::ok())
-      {
-        result->sequence = sequence;
-        goal_handle->succeed(result);
-        RCLCPP_INFO(this->get_logger(), "Goal succeeded");
+        // Check if goal is done
+        if (rclcpp::ok())
+        {
+          result->sequence = sequence;
+          goal_handle->succeed(result);
+          RCLCPP_INFO(this->get_logger(), "Goal succeeded");
+        }
       }
     }
   }; // class RobotActionServer

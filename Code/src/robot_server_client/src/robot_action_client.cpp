@@ -59,7 +59,58 @@ public:
 
   }
 
-   void handle_input()
+
+void moveArmToPosition(const std::string& command) {
+    std::string positionCommand, speedStr;
+    std::istringstream iss(command);
+    long speed;
+    iss >> positionCommand >> speedStr;
+    size_t foundPosition = positionCommand.find_first_of("PRSIprsi");
+    if (foundPosition != std::string::npos && positionCommand.length() == 1) {
+        if(!speedStr.empty()) {
+            speed = std::atoi(speedStr.c_str());
+            std::cout << "Moving to position: " << positionCommand << ", with speed " << speed << " ms." << std::endl;
+        } else {
+            std::cout << "Moving to position: " << positionCommand << std::endl;
+        }
+        this->send_goal(command);
+    } else {
+        std::cout << "Requested position '" << positionCommand << "' is unknown." << std::endl;
+        handle_input();
+    }
+}
+
+std::vector<uint16_t> parseJointToDegree(std::string command) {
+    std::string temp;
+    std::stringstream ss(command);
+    std::vector<uint16_t> result;
+    while (getline(ss, temp, ' ')) {
+        result.push_back(stoi(temp));
+    }
+    return result;
+ }
+
+void moveJointToDegree(const std::string& command) {
+    std::vector<uint16_t> commandNumbers = parseJointToDegree(command);
+    std::cout << "Moving towards: " << std::endl;
+    for (uint16_t i = 0; i < commandNumbers.size() - 1; ++i) {
+      std::cout << commandNumbers.at(i) << " ";
+    }
+    std::cout << std::endl;
+    if (commandNumbers.size() % 2 == 0) {
+      std::cout << "As fast as possible" << std:: endl;
+    } else {
+      std::cout << "In " << commandNumbers.back() << " milliseconds" << std::endl;
+    }
+    this->send_goal(command);
+}
+
+void makeStop()
+{
+  handle_input();
+}
+
+  void handle_input()
   {
     std::string userInput;
         std::cin >> userInput;
@@ -69,18 +120,16 @@ public:
             std::cout << "Enter position command: " << std::endl;
             std::cin.ignore();
             std::getline(std::cin, command);
-            this->send_goal(command);
-            //place feedback here
+            moveArmToPosition(command);
         } else if (userInput == "2") {
             std::string command;
             std::cout << "Enter joint command: " << std::endl;
             std::cin.ignore();
             std::getline(std::cin, command);
-            this->send_goal(command);
-            //place feedback here
+            moveJointToDegree(command);
         } else if (userInput == "3") {
             std::cout << "Emergency stop initiated." << std::endl;
-            //place feedback here
+            makeStop();
         } else if (userInput == "4") {
             std::cout << "Exiting program." << std::endl;
             rclcpp::shutdown();

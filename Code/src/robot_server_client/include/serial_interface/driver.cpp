@@ -5,7 +5,6 @@
 
 driver::driver(std::string a_port): robot_port(a_port)
 {
-    std::cout << __PRETTY_FUNCTION__ << ": " << config_path << std::endl;
     initialize();
 }
 
