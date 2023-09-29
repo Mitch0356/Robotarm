@@ -80,29 +80,47 @@ void moveArmToPosition(const std::string& command) {
     }
 }
 
-std::vector<uint16_t> parseJointToDegree(std::string command) {
+std::vector<std::string> parseJointToDegree(std::string command) {
     std::string temp;
     std::stringstream ss(command);
-    std::vector<uint16_t> result;
+    std::vector<std::string> result;
     while (getline(ss, temp, ' ')) {
-        result.push_back(stoi(temp));
+        result.push_back(temp);
     }
     return result;
  }
 
+  bool check_digits(std::vector<std::string> commandNumbers)
+  {
+    for (std::string word : commandNumbers) {
+      for (char character : word) {
+          if (!isdigit(character)){
+              return false;
+          }
+      }
+    }
+
+    return true;
+  }
+
 void moveJointToDegree(const std::string& command) {
-    std::vector<uint16_t> commandNumbers = parseJointToDegree(command);
-    std::cout << "Moving towards: " << std::endl;
-    for (uint16_t i = 0; i < commandNumbers.size() - 1; ++i) {
-      std::cout << commandNumbers.at(i) << " ";
-    }
-    std::cout << std::endl;
-    if (commandNumbers.size() % 2 == 0) {
-      std::cout << "As fast as possible" << std:: endl;
+    std::vector<std::string> commandNumbers = parseJointToDegree(command);
+    if (!check_digits(commandNumbers) || commandNumbers.size() < 2) {
+      std::cout << "Invalid syntax" << std::endl;
+      handle_input();
     } else {
-      std::cout << "In " << commandNumbers.back() << " milliseconds" << std::endl;
+      std::cout << "Moving towards: " << std::endl;
+      for (uint16_t i = 0; i < commandNumbers.size() - 1; ++i) {
+        std::cout << commandNumbers.at(i) << " ";
+      }
+      std::cout << std::endl;
+      if (commandNumbers.size() % 2 == 0) {
+        std::cout << "As fast as possible" << std:: endl;
+      } else {
+        std::cout << "In " << commandNumbers.back() << " milliseconds" << std::endl;
+      }
+      this->send_goal(command);
     }
-    this->send_goal(command);
 }
 
 void makeStop()
