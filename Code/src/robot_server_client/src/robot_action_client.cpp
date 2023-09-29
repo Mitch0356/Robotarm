@@ -57,7 +57,11 @@ namespace robot_server_client
           std::bind(&RobotActionClient::result_callback, this, _1);
       this->client_ptr_->async_send_goal(goal_msg, send_goal_options);
     }
-
+    /**
+     * @brief Sends action to move to a certain position. This also checks for the correct use of the protocol used to send messages. 
+     * 
+     * @param command 
+     */
     void moveArmToPosition(const std::string &command)
     {
       RCLCPP_INFO(this->get_logger(), "STATE: {SENDING}");
@@ -85,7 +89,12 @@ namespace robot_server_client
         handle_input();
       }
     }
-
+    /**
+    * @brief breaks the total command down to different strings seperated by whitespace
+    * 
+    * 
+    * @param command the original given command to parse
+    */
     std::vector<std::string> parseJointToDegree(std::string command)
     {
       std::string temp;
@@ -97,12 +106,24 @@ namespace robot_server_client
       }
       return result;
     }
-
+    /**
+    * @brief check if the string provided is a negative number, checks by looking if the first character is '-'
+    * 
+    * 
+    * @param input the string to check 
+    */
     bool isNegative(std::string input)
     {
       return input[0] == '-';
     }
 
+    /**
+     * @brief checks if given command only consists of valid digits.
+     * 
+     * @param commandNumbers 
+     * @return true 
+     * @return false 
+     */
     bool check_digits(std::vector<std::string> commandNumbers)
     {
       for (std::string word : commandNumbers)
@@ -130,7 +151,11 @@ namespace robot_server_client
       }
       return true;
     }
-
+    /**
+     * @brief Checks if given time is able to be reached within given QoS
+     * 
+     * @param time 
+     */
     void QoSMessage(const std::string time)
     {
 
@@ -142,6 +167,11 @@ namespace robot_server_client
       }
     }
 
+    /**
+     * @brief moves a certain joint to a certain degree. Also handles protocol checking.
+     * 
+     * @param command 
+     */
     void moveJointToDegree(const std::string &command)
     {
       RCLCPP_INFO(this->get_logger(), "STATE: {SENDING}");
@@ -170,13 +200,20 @@ namespace robot_server_client
         this->send_goal(command);
       }
     }
-
+    
+    /**
+    * @brief Sends a message to the arm that stops everything
+    */
     void makeStop()
     {
       this->send_goal("0");
       handle_input();
     }
 
+    /**
+     * @brief Handles all given input and handles accordingly.
+     * 
+     */
     void handle_input()
     {
       RCLCPP_INFO(this->get_logger(), "STATE: {IDLE}");
@@ -190,7 +227,7 @@ namespace robot_server_client
         std::cin.ignore();
         std::getline(std::cin, command);
         moveArmToPosition(command);
-        RCLCPP_INFO(this->get_logger(), "EVENT: {POSITION_CHANGE}");
+        RCLCPP_DEBUG(this->get_logger(), "EVENT: {POSITION_CHANGE}");
       }
       else if (userInput == "2")
       {
@@ -199,12 +236,12 @@ namespace robot_server_client
         std::cin.ignore();
         std::getline(std::cin, command);
         moveJointToDegree(command);
-        RCLCPP_INFO(this->get_logger(), "EVENT: {SPECIFIC_JOINT_CHANGE}");
+        RCLCPP_DEBUG(this->get_logger(), "EVENT: {SPECIFIC_JOINT_CHANGE}");
       }
       else if (userInput == "3")
       {
         std::cout << "Emergency stop initiated." << std::endl;
-        RCLCPP_INFO(this->get_logger(), "EVENT: {STOP}");
+        RCLCPP_DEBUG(this->get_logger(), "EVENT: {STOP}");
 
         makeStop();
       }
@@ -243,10 +280,19 @@ namespace robot_server_client
 
     void result_callback(const GoalHandlePosition::WrappedResult &result)
     {
+      std::stringstream ss;
+      for (auto number : result.result->sequence)
+      {
+        if(number)
+        {
+          ss << "Currently sending......";
+        }
+      }
+      RCLCPP_INFO(this->get_logger(), ss.str().c_str());
       switch (result.code)
       {
       case rclcpp_action::ResultCode::SUCCEEDED:
-        RCLCPP_INFO(this->get_logger(), "STATE: {DONE_RECEIVING}");
+        RCLCPP_INFO(this->get_logger(), "EVENT: {DONE_RECEIVING}");
         handle_input();
         break;
       case rclcpp_action::ResultCode::ABORTED:
@@ -259,13 +305,7 @@ namespace robot_server_client
         RCLCPP_ERROR(this->get_logger(), "Unknown result code");
         return;
       }
-      std::stringstream ss;
-      ss << "Result received: ";
-      for (auto number : result.result->sequence)
-      {
-        ss << number << " ";
-      }
-      RCLCPP_INFO(this->get_logger(), ss.str().c_str());
+
     }
 
   }; // class RobotActionClient

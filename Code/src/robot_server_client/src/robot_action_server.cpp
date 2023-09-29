@@ -62,15 +62,14 @@ namespace robot_server_client
     void handle_accepted(const std::shared_ptr<GoalHandlePosition> goal_handle)
     {
       using namespace std::placeholders;
-      // if (!thread_queue.empty())
-      // {
-      //   thread_queue.front().join();
-      // }
-      // this needs to return quickly to avoid blocking the executor, so spin up a new thread
       std::thread{std::bind(&RobotActionServer::execute, this, _1), goal_handle}.detach();
-      // thread_queue.push_back(std::thread{std::bind(&RobotActionServer::execute, this, _1), goal_handle});
     }
-
+    /**
+    * @brief returns the asked time for a command if provided
+    * 
+    * 
+    * @param command Command received from RobotActionClient as string
+    */
     uint32_t getTime(std::string order)
     {
       RCLCPP_INFO(this->get_logger(), "STATE: {SENDING_COMMAND}");
@@ -104,7 +103,13 @@ namespace robot_server_client
         }
       }
     }
-
+    /**
+    * @brief reads the given command and calls the function to move the arm from the driver in the dynamicly linked library
+    * 
+    *
+    * @param command the command received from RobotActionClient 
+    * @param interval The amount of milliseconds in which the movement needs to be completed, by default 0 unless another time is given
+    */
     void moveArm(const std::string &command, const long &interval = 0)
     {
       if (command == "0")
@@ -141,10 +146,15 @@ namespace robot_server_client
         d.move_multiple(command, interval);
       }
     }
-
+    /**
+    * @brief receives the goal for the movement goal and sends feedback and the result back
+    * 
+    * 
+    * @param goal_handle the goal to be achieved through the messages, in this case a position the arm needs to move towards 
+    */
     void execute(const std::shared_ptr<GoalHandlePosition> goal_handle)
     {
-      RCLCPP_INFO(this->get_logger(), "STATE: {EXECUTING_ACTION}");
+      RCLCPP_DEBUG(this->get_logger(), "EVENT: {EXECUTING_ACTION}");
       rclcpp::Rate loop_rate(1);
       const auto goal = goal_handle->get_goal();
       auto feedback = std::make_shared<Position::Feedback>();
@@ -155,8 +165,8 @@ namespace robot_server_client
       bool goalCompleted = false;
       while (!goalCompleted)
       {
-        RCLCPP_INFO(this->get_logger(), "STATE: {SENDING_FEEDBACK}");
-
+        RCLCPP_DEBUG(this->get_logger(), "EVENT: {SEND_FEEDBACK}");
+        RCLCPP_INFO(this->get_logger(), "STATE: {MOVING}");
         if (goal_handle->is_canceling())
         {
           result->sequence = sequence;
