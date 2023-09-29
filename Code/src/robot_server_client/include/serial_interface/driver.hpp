@@ -11,9 +11,9 @@ class driver
 private:
     serial_port robot_port;
     std::vector<joint> joint_container;
-    const std::string config_path;
+    const std::string config_path = "src/robot_server_client/include/serial_interface/config.json";
 public:
-    driver(const std::string& a_source_path, const std::string& a_port);
+    driver(std::string a_port);
     ~driver();
     void initialize();
     void move_arm_pos(const long degrees, const joint a_joint, const long interval);

@@ -1,9 +1,9 @@
 #include "driver.hpp"
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include <filesystem>
 
-
-driver::driver(const std::string& a_source_path, const std::string& a_port): robot_port(a_port), config_path(a_source_path)
+driver::driver(std::string a_port): robot_port(a_port)
 {
     std::cout << __PRETTY_FUNCTION__ << ": " << config_path << std::endl;
     initialize();
@@ -61,11 +61,14 @@ void driver::move_arm_posture(const postures a_posture, const long interval = 0)
     robot_port.easy_write_to_port(message.str());
 }
 
+
 void driver::initialize() 
 {
 try {
+    namespace fs = std::filesystem;
         boost::property_tree::ptree pt;
-        boost::property_tree::read_json(config_path, pt);
+        std::cout << "Current path is " << fs::current_path() << '\n'; // (1)        
+           boost::property_tree::read_json(config_path, pt);
         const boost::property_tree::ptree& joint_tree = pt.get_child("joints");
         for (const auto& item : joint_tree) {
             joint_type identifier =  static_cast<joint_type>(item.second.get<int>("identifier"));
